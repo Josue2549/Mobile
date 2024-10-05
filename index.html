@@ -54,7 +54,7 @@
         <input type="text" id="networkElement" placeholder="Network Element" />
         <input type="number" id="clientesAfectados" placeholder="Cantidad de Clientes Afectados" />
         <button onclick="generateTable()">Generar Tabla</button>
-        <button onclick="updateAffectedClients()">Actualizar Clientes Afectados</button>
+        <button onclick="updateAllAffectedClients()">Actualizar Clientes Afectados</button>
         <button onclick="clearData()">Limpiar Datos</button>
         <button onclick="copyTable()">Copiar Tabla</button>
 
@@ -230,34 +230,21 @@
             }
         }
 
-        function updateAffectedClients() {
-            const nombreCentral = document.getElementById('nombreCentral').value;
+        function updateAllAffectedClients() {
             const clientesAfectados = parseInt(document.getElementById('clientesAfectados').value) || 0;
 
-            if (nombreCentral) {
+            if (clientesAfectados > 0) {
                 const tableBody = document.getElementById('dataTable').getElementsByTagName('tbody')[0];
-                let existingRow = null;
 
-                // Buscar si la fila ya existe
+                // Sumar clientes afectados a todas las filas
                 for (let i = 0; i < tableBody.rows.length; i++) {
-                    if (tableBody.rows[i].cells[2].innerText === nombreCentral) {
-                        existingRow = tableBody.rows[i];
-                        break;
-                    }
+                    const currentAffected = parseInt(tableBody.rows[i].cells[4].innerText) || 0;
+                    tableBody.rows[i].cells[4].innerText = currentAffected + clientesAfectados;
                 }
-
-                if (existingRow) {
-                    // Actualizar el campo de clientes afectados
-                    const currentAffected = parseInt(existingRow.cells[4].innerText) || 0;
-                    existingRow.cells[4].innerText = currentAffected + clientesAfectados;
-                    alert("Clientes afectados actualizados.");
-                } else {
-                    alert("La central no se encuentra en la tabla.");
-                }
-
+                alert("Clientes afectados actualizados en todas las centrales.");
                 clearInputFields();
             } else {
-                alert("Por favor, ingrese el nombre de la central.");
+                alert("Por favor, ingrese un número válido de clientes a afectar.");
             }
         }
 
