@@ -118,7 +118,7 @@
 
                         const highlightedRow = row.map((cell, index) => {
                             if ([2, 7, 9, 8].includes(index)) {
-                                return `<span class="highlight">${cell}</span>`;
+                                return <span class="highlight">${cell}</span>;
                             }
                             return cell;
                         }).join(', ');
@@ -128,10 +128,10 @@
                         resultsList.appendChild(resultItem);
                     });
                 } else {
-                    resultsList.innerHTML = `<strong>No se encontraron resultados.</strong>`;
+                    resultsList.innerHTML = <strong>No se encontraron resultados.</strong>;
                 }
             } else {
-                resultsList.innerHTML = `<strong>Por favor ingrese un término de búsqueda.</strong>`;
+                resultsList.innerHTML = <strong>Por favor ingrese un término de búsqueda.</strong>;
             }
         }
 
@@ -180,7 +180,7 @@
             headers.forEach((header, index) => {
                 const value = row[index] || 'N/A';
                 const highlight = (header === "LONG_NAME" || header === "NETWORK_ELEMENT" || header === "NE_DESCRIPTION" || header === "SWITCH_TYPE") ? 'style="color: red;"' : '';
-                tableHTML += `<tr><td>${header}</td><td ${highlight}>${value}</td></tr>`;
+                tableHTML += <tr><td>${header}</td><td ${highlight}>${value}</td></tr>;
             });
 
             tableHTML += '</tbody></table>';
