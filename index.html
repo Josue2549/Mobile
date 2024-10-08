@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestor de Centrales</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { background-color: #888; margin: 0; font-family: 'Arial', sans-serif; }
+        .container { max-width: 800px; margin: auto; padding: 20px; }
+        .header { display: flex; align-items: center; }
+        h1 { color: white; font-size: 2.5rem; font-weight: bold; margin: 20px 0; margin-left: 10px; }
+        img { height: 50px; }
+        input[type="text"], input[type="number"], input[type="file"] { width: 100%; padding: 8px; margin: 10px 0; border-radius: 5px; border: 1px solid #ccc; }
+        button { margin-top: 10px; padding: 8px 12px; font-size: 0.9rem; cursor: pointer; border: none; border-radius: 5px; background-color: #dc3545; color: white; }
+        button:hover { background-color: #c82333; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #dddddd; text-align: left; padding: 8px; font-size: 0.9rem; }
+        th { background-color: #FF0000; color: white; }
+        #details { margin-top: 20px; padding: 10px; border: 1px solid #ccc; border-radius: 8px; background-color: white; }
+        .hidden { display: none; }
+        #resultsList { margin-top: 10px; }
+        .result-item { cursor: pointer; padding: 5px; border: 1px solid #ccc; margin: 5px 0; background-color: white; border-radius: 5px; }
+        .result-item:hover { background-color: #f0f0f0; }
+        .highlight { color: red; }
+        .footer { margin-top: 20px; text-align: center; color: white; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+             <img src="Logo.png" alt="Logo Claro" class="logo">
+            <h1>Mobile Data-Collection</h1>
+        </div>
+
+        <h2>Cargar Datos</h2>
+        <input type="file" id="fileInput" accept=".xlsx, .xls" />
+        <button onclick="loadData()">Cargar Datos</button>
+
+        <h2>Buscar Central</h2>
+        <input type="text" id="searchInput" placeholder="Buscar por nombre de la central o NETWORK_ELEMENT" />
+        <button onclick="searchCentral()">Buscar</button>
+        <div id="resultsList"></div>
+
+        <div id="details" class="hidden">
+            <h3>Detalles de la Central</h3>
+            <div id="detailsContent"></div>
+        </div>
+
+        <h2>Generador de Levantamientos</h2>
+        <input type="text" id="incidente" placeholder="Incidente" />
+        <input type="text" id="tipoCentral" placeholder="Tipo de Central" />
+        <input type="text" id="nombreCentral" placeholder="Nombre De La Central" />
+        <input type="text" id="networkElement" placeholder="Network Element" />
+        <input type="number" id="clientesAfectados" placeholder="Cantidad de Clientes Afectados" />
+        <button onclick="generateTable()">Generar Tabla</button>
+        <button onclick="updateAffectedClients()">Actualizar Clientes Afectados</button>
+        <button onclick="clearData()">Limpiar Datos</button>
+        <button onclick="copyTable()">Copiar Tabla</button>
+
+        <table id="dataTable">
+            <thead>
+                <tr>
+                    <th>Incidente</th>
+                    <th>Tipo de Central</th>
+                    <th>Nombre De La Central</th>
+                    <th>Network Element</th>
+                    <th>Cantidad de Clientes Afectados</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+
+        <div class="footer">
+            Desarrollado por Josue Morillo Versión 1.0
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.5/xlsx.full.min.js"></script>
+    <script>
+        let globalData = [];
+
+        function loadData() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+
+            reader.onload = function(event) {
+                const data = new Uint8Array(event.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                globalData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+                console.log(globalData);
+                alert("Datos cargados correctamente.");
+            };
+
+            reader.readAsArrayBuffer(file);
+        }
+
+        function searchCentral() {
+            const input = document.getElementById('searchInput').value.toLowerCase();
+            const resultsList = document.getElementById('resultsList');
+            const detailsDiv = document.getElementById('details');
+            const detailsContent = document.getElementById('detailsContent');
+            resultsList.innerHTML = '';
+            detailsDiv.classList.add('hidden');
+            detailsContent.innerHTML = '';
+
+            if (globalData.length > 0 && input) {
+                const filteredData = globalData.filter(row => 
+                    (row[2] && row[2].toLowerCase().includes(input)) || 
+                    (row[7] && row[7].toLowerCase().includes(input)) // Filtrar por NETWORK_ELEMENT
+                );
+
+                if (filteredData.length > 0) {
+                    filteredData.forEach(row => {
+                        const resultItem = document.createElement('div');
+                        resultItem.className = 'result-item';
+
+                        // Resaltar campos específicos en el texto de la fila
+                        const highlightedRow = row.map((cell, index) => {
+                            if ([2, 7, 9, 8].includes(index)) { // LONG_NAME, NETWORK_ELEMENT, NE_DESCRIPTION, SWITCH_TYPE
+                                return `<span class="highlight">${cell}</span>`;
+                            }
+                            return cell;
+                        }).join(', ');
+
+                        resultItem.innerHTML = highlightedRow;
+                        resultItem.onclick = () => showDetails(row);
+                        resultsList.appendChild(resultItem);
+                    });
+                } else {
+                    resultsList.innerHTML = `<strong>No se encontraron resultados.</strong>`;
+                }
+            } else {
+                resultsList.innerHTML = `<strong>Por favor ingrese un término de búsqueda.</strong>`;
+            }
+        }
+
+        function showDetails(row) {
+            const detailsDiv = document.getElementById('details');
+            const detailsContent = document.getElementById('detailsContent');
+            const incidenteInput = document.getElementById('incidente');
+            const tipoCentralInput = document.getElementById('tipoCentral');
+            const nombreCentralInput = document.getElementById('nombreCentral');
+            const networkElementInput = document.getElementById('networkElement');
+            const clientesAfectadosInput = document.getElementById('clientesAfectados');
+
+            incidenteInput.value = ''; // Campo vacío para incidente
+            tipoCentralInput.value = row[8]; // Cambiado a SWITCH_TYPE
+            nombreCentralInput.value = row[2]; // Cambiado a LONG_NAME
+            networkElementInput.value = row[7]; // Cambiado a NETWORK_ELEMENT_ID
+            clientesAfectadosInput.value = row[13] || 0; // Asignar automáticamente "Asignados" (ajusta el índice si es necesario)
+            
+            // Crear tabla para mostrar los detalles
+            let tableHTML = '<table><thead><tr>' +
+                '<th>Campo</th><th>Valor</th>' +
+                '</tr></thead><tbody>';
+                
+            const headers = [
+                "PROVIDER_LOCATION_ID",
+                "PROVIDER_LOCATION",
+                "LONG_NAME",
+                "REGION",
+                "PROVINCE",
+                "MUNICIPALITY",
+                "NETWORK_ELEMENT_ID",
+                "NETWORK_ELEMENT",
+                "SWITCH_TYPE",
+                "NE_DESCRIPTION",
+                "CLLI",
+                "NMS",
+                "TOTAL",
+                "ASIGNADOS",
+                "ASIGNADOS_SIN_CLIENTES",
+                "ASIGNADOS_PRECOCIDOS",
+                "ASIGNADOS_STATUS_DISPONIBLE",
+                "RESERVADOS",
+                "DISPONIBLES",
+                "AVERIAS"
+            ];
+
+            headers.forEach((header, index) => {
+                const value = row[index] || 'N/A';
+                // Resaltar en rojo los campos específicos
+                const highlight = (header === "LONG_NAME" || header === "NETWORK_ELEMENT" || header === "NE_DESCRIPTION" || header === "SWITCH_TYPE") ? 'style="color: red;"' : '';
+                tableHTML += `<tr><td>${header}</td><td ${highlight}>${value}</td></tr>`;
+            });
+
+            tableHTML += '</tbody></table>';
+            detailsContent.innerHTML = tableHTML;
+            detailsDiv.classList.remove('hidden');
+        }
+
+        function generateTable() {
+            const incidente = document.getElementById('incidente').value;
+            const tipoCentral = document.getElementById('tipoCentral').value;
+            const nombreCentral = document.getElementById('nombreCentral').value;
+            const networkElement = document.getElementById('networkElement').value;
+            const clientesAfectados = parseInt(document.getElementById('clientesAfectados').value) || 0;
+
+            if (tipoCentral && nombreCentral && networkElement) {
+                const tableBody = document.getElementById('dataTable').getElementsByTagName('tbody')[0];
+                let existingRow = null;
+
+                // Buscar si la fila ya existe
+                for (let i = 0; i < tableBody.rows.length; i++) {
+                    if (tableBody.rows[i].cells[2].innerText === nombreCentral) {
+                        existingRow = tableBody.rows[i];
+                        break;
+                    }
+                }
+
+                if (existingRow) {
+                    // Si existe, actualizar el campo de clientes afectados
+                    const currentAffected = parseInt(existingRow.cells[4].innerText) || 0;
+                    existingRow.cells[4].innerText = currentAffected + clientesAfectados;
+                } else {
+                    // Si no existe, agregar una nueva fila
+                    const newRow = tableBody.insertRow();
+                    newRow.insertCell(0).innerText = incidente; // Campo en blanco
+                    newRow.insertCell(1).innerText = tipoCentral;
+                    newRow.insertCell(2).innerText = nombreCentral;
+                    newRow.insertCell(3).innerText = networkElement;
+                    newRow.insertCell(4).innerText = clientesAfectados; // Clientes afectados
+                }
+
+                clearInputFields();
+            } else {
+                alert("Por favor, complete todos los campos.");
+            }
+        }
+
+        function updateAffectedClients() {
+            const clientesAfectados = parseInt(document.getElementById('clientesAfectados').value) || 0;
+
+            if (clientesAfectados) {
+                const tableBody = document.getElementById('dataTable').getElementsByTagName('tbody')[0];
+
+                // Recorrer todas las filas y sumar los clientes afectados
+                for (let i = 0; i < tableBody.rows.length; i++) {
+                    const currentAffected = parseInt(tableBody.rows[i].cells[4].innerText) || 0;
+                    tableBody.rows[i].cells[4].innerText = currentAffected + clientesAfectados;
+                }
+
+                alert("Clientes afectados actualizados en todas las centrales.");
+                clearInputFields();
+            } else {
+                alert("Por favor, ingrese un número válido de clientes afectados.");
+            }
+        }
+
+        function clearInputFields() {
+            document.getElementById('incidente').value = '';
+            document.getElementById('tipoCentral').value = '';
+            document.getElementById('nombreCentral').value = '';
+            document.getElementById('networkElement').value = '';
+            document.getElementById('clientesAfectados').value = '';
+        }
+
+        function clearData() {
+            const tableBody = document.getElementById('dataTable').getElementsByTagName('tbody')[0];
+            tableBody.innerHTML = '';
+            clearInputFields();
+        }
+
+        function copyTable() {
+            const table = document.getElementById('dataTable');
+            const range = document.createRange();
+            range.selectNode(table);
+            window.getSelection().removeAllRanges();
+            window.getSelection().addRange(range);
+            document.execCommand('copy');
+            alert("Tabla copiada al portapapeles.");
+        }
+    </script>
+</body>
+</html>
