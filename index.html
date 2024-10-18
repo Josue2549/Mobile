@@ -38,7 +38,7 @@
         <button onclick="loadData()">Cargar Datos</button>
 
         <h2>Buscar Central</h2>
-        <input type="text" id="searchInput" placeholder="Buscar por nombre de la central o NETWORK_ELEMENT" />
+        <input type="text" id="searchInput" placeholder="Buscar por nombre de la central, NETWORK_ELEMENT o CLLI" />
         <button onclick="searchCentral()">Buscar</button>
         <div id="resultsList"></div>
 
@@ -52,6 +52,7 @@
         <input type="text" id="tipoCentral" placeholder="Tipo de Central" />
         <input type="text" id="nombreCentral" placeholder="Nombre De La Central" />
         <input type="text" id="networkElement" placeholder="Network Element" />
+        <input type="text" id="clli" placeholder="CLLI" />
         <input type="number" id="clientesAfectados" placeholder="Cantidad de Clientes Afectados" />
         <button onclick="generateTable()">Generar Tabla</button>
         <button onclick="updateAffectedClients()">Actualizar Clientes Afectados</button>
@@ -67,6 +68,7 @@
                     <th>Tipo de Central</th>
                     <th>Nombre De La Central</th>
                     <th>Network Element</th>
+                    <th>CLLI</th>
                     <th>Cantidad de Clientes Afectados</th>
                 </tr>
             </thead>
@@ -111,7 +113,8 @@
             if (globalData.length > 0 && input) {
                 filteredData = globalData.filter(row => 
                     (row[2] && row[2].toLowerCase().includes(input)) || 
-                    (row[7] && row[7].toLowerCase().includes(input))
+                    (row[7] && row[7].toLowerCase().includes(input)) ||
+                    (row[10] && row[10].toLowerCase().includes(input)) // Filtrando por CLLI
                 );
 
                 if (filteredData.length > 0) {
@@ -120,8 +123,8 @@
                         resultItem.className = 'result-item';
 
                         const highlightedRow = row.map((cell, index) => {
-                            if ([2, 7, 9, 8].includes(index)) {
-                                return `<span class="highlight">${cell}</span>`;
+                            if ([2, 7, 10].includes(index)) {
+                                return `<span class="highlight">${cell}</span>`; // Resaltar CLLI
                             }
                             return cell;
                         }).join(', ');
@@ -146,11 +149,13 @@
             const nombreCentralInput = document.getElementById('nombreCentral');
             const networkElementInput = document.getElementById('networkElement');
             const clientesAfectadosInput = document.getElementById('clientesAfectados');
+            const clliInput = document.getElementById('clli');
 
             incidenteInput.value = ''; 
             tipoCentralInput.value = row[8]; 
             nombreCentralInput.value = row[2]; 
             networkElementInput.value = row[7]; 
+            clliInput.value = row[10] || ''; // Asignar CLLI
             clientesAfectadosInput.value = row[13] || 0; 
 
             let tableHTML = '<table><thead><tr>' +
@@ -196,9 +201,10 @@
             const tipoCentral = document.getElementById('tipoCentral').value;
             const nombreCentral = document.getElementById('nombreCentral').value;
             const networkElement = document.getElementById('networkElement').value;
+            const clli = document.getElementById('clli').value;
             const clientesAfectados = parseInt(document.getElementById('clientesAfectados').value) || 0;
 
-            if (tipoCentral && nombreCentral && networkElement) {
+            if (tipoCentral && nombreCentral && networkElement && clli) {
                 const tableBody = document.getElementById('dataTable').getElementsByTagName('tbody')[0];
                 let existingRow = null;
 
@@ -210,15 +216,16 @@
                 }
 
                 if (existingRow) {
-                    const currentAffected = parseInt(existingRow.cells[4].innerText) || 0;
-                    existingRow.cells[4].innerText = currentAffected + clientesAfectados;
+                    const currentAffected = parseInt(existingRow.cells[5].innerText) || 0;
+                    existingRow.cells[5].innerText = currentAffected + clientesAfectados;
                 } else {
                     const newRow = tableBody.insertRow();
                     newRow.insertCell(0).innerText = incidente;
                     newRow.insertCell(1).innerText = tipoCentral;
                     newRow.insertCell(2).innerText = nombreCentral;
                     newRow.insertCell(3).innerText = networkElement;
-                    newRow.insertCell(4).innerText = clientesAfectados; 
+                    newRow.insertCell(4).innerText = clli; // Agregar CLLI
+                    newRow.insertCell(5).innerText = clientesAfectados; 
                 }
 
                 clearInputFields();
@@ -234,8 +241,8 @@
                 const tableBody = document.getElementById('dataTable').getElementsByTagName('tbody')[0];
 
                 for (let i = 0; i < tableBody.rows.length; i++) {
-                    const currentAffected = parseInt(tableBody.rows[i].cells[4].innerText) || 0;
-                    tableBody.rows[i].cells[4].innerText = currentAffected + clientesAfectados;
+                    const currentAffected = parseInt(tableBody.rows[i].cells[5].innerText) || 0;
+                    tableBody.rows[i].cells[5].innerText = currentAffected + clientesAfectados;
                 }
 
                 alert("Clientes afectados actualizados en todas las centrales.");
@@ -247,13 +254,12 @@
 
         function editAffectedClients() {
             if (filteredData.length > 0) {
-                const totalAsignados = filteredData.reduce((sum, row) => sum + (parseInt(row[13]) || 0), 0); // Sumar total de ASIGNADOS
+                const totalAsignados = filteredData.reduce((sum, row) => sum + (parseInt(row[13]) || 0), 0);
                 document.getElementById('clientesAfectados').value = totalAsignados;
 
-                // Actualizar el valor en la tabla
                 const tableBody = document.getElementById('dataTable').getElementsByTagName('tbody')[0];
                 for (let i = 0; i < tableBody.rows.length; i++) {
-                    tableBody.rows[i].cells[4].innerText = totalAsignados; // Actualizar el campo en cada fila
+                    tableBody.rows[i].cells[5].innerText = totalAsignados;
                 }
                 alert(`Clientes afectados actualizados a ${totalAsignados} en todas las centrales.`);
             } else {
@@ -266,18 +272,16 @@
             let totalClientesAfectados = 0;
 
             for (let i = 0; i < tableBody.rows.length; i++) {
-                const clientesAfectados = parseInt(tableBody.rows[i].cells[4].innerText) || 0;
+                const clientesAfectados = parseInt(tableBody.rows[i].cells[5].innerText) || 0;
                 totalClientesAfectados += clientesAfectados;
             }
 
-            // Calcular el total de "ASIGNADOS" solo para las filas filtradas
             let totalAsignados = 0;
             filteredData.forEach(row => {
-                const asignados = parseInt(row[13]) || 0; // Cambiar el índice si es necesario
+                const asignados = parseInt(row[13]) || 0; 
                 totalAsignados += asignados;
             });
 
-            // Mostrar el total en el campo de "Cantidad de Clientes Afectados"
             document.getElementById('clientesAfectados').value = totalClientesAfectados;
             alert(`Total de Clientes Afectados: ${totalClientesAfectados}, Total ASIGNADOS: ${totalAsignados}`);
         }
@@ -287,6 +291,7 @@
             document.getElementById('tipoCentral').value = '';
             document.getElementById('nombreCentral').value = '';
             document.getElementById('networkElement').value = '';
+            document.getElementById('clli').value = ''; // Limpiar CLLI
             document.getElementById('clientesAfectados').value = '';
         }
 
