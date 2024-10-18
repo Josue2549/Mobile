@@ -49,8 +49,8 @@
 
         <h2>Generador de Levantamientos</h2>
         <input type="text" id="incidente" placeholder="Incidente" />
-        <input type="text" id="tipoCentral" placeholder="Tipo de Central" />
         <input type="text" id="nombreCentral" placeholder="Nombre De La Central" />
+        <input type="text" id="tipoCentral" placeholder="Tipo de Central" />
         <input type="text" id="networkElement" placeholder="Network Element" />
         <input type="text" id="clli" placeholder="CLLI" />
         <input type="number" id="clientesAfectados" placeholder="Cantidad de Clientes Afectados" />
@@ -65,8 +65,8 @@
             <thead>
                 <tr>
                     <th>Incidente</th>
-                    <th>Tipo de Central</th>
                     <th>Nombre De La Central</th>
+                    <th>Tipo de Central</th>
                     <th>Network Element</th>
                     <th>CLLI</th>
                     <th>Cantidad de Clientes Afectados</th>
@@ -114,7 +114,7 @@
                 filteredData = globalData.filter(row => 
                     (row[2] && row[2].toLowerCase().includes(input)) || 
                     (row[7] && row[7].toLowerCase().includes(input)) ||
-                    (row[10] && row[10].toLowerCase().includes(input)) // Filtrando por CLLI
+                    (row[10] && row[10].toLowerCase().includes(input)) 
                 );
 
                 if (filteredData.length > 0) {
@@ -124,7 +124,7 @@
 
                         const highlightedRow = row.map((cell, index) => {
                             if ([2, 7, 10].includes(index)) {
-                                return `<span class="highlight">${cell}</span>`; // Resaltar CLLI
+                                return `<span class="highlight">${cell}</span>`;
                             }
                             return cell;
                         }).join(', ');
@@ -155,7 +155,7 @@
             tipoCentralInput.value = row[8]; 
             nombreCentralInput.value = row[2]; 
             networkElementInput.value = row[7]; 
-            clliInput.value = row[10] || ''; // Asignar CLLI
+            clliInput.value = row[10] || ''; 
             clientesAfectadosInput.value = row[13] || 0; 
 
             let tableHTML = '<table><thead><tr>' +
@@ -198,8 +198,8 @@
 
         function generateTable() {
             const incidente = document.getElementById('incidente').value;
-            const tipoCentral = document.getElementById('tipoCentral').value;
             const nombreCentral = document.getElementById('nombreCentral').value;
+            const tipoCentral = document.getElementById('tipoCentral').value;
             const networkElement = document.getElementById('networkElement').value;
             const clli = document.getElementById('clli').value;
             const clientesAfectados = parseInt(document.getElementById('clientesAfectados').value) || 0;
@@ -209,7 +209,7 @@
                 let existingRow = null;
 
                 for (let i = 0; i < tableBody.rows.length; i++) {
-                    if (tableBody.rows[i].cells[2].innerText === nombreCentral) {
+                    if (tableBody.rows[i].cells[1].innerText === nombreCentral) {
                         existingRow = tableBody.rows[i];
                         break;
                     }
@@ -221,10 +221,10 @@
                 } else {
                     const newRow = tableBody.insertRow();
                     newRow.insertCell(0).innerText = incidente;
-                    newRow.insertCell(1).innerText = tipoCentral;
-                    newRow.insertCell(2).innerText = nombreCentral;
+                    newRow.insertCell(1).innerText = nombreCentral;
+                    newRow.insertCell(2).innerText = tipoCentral;
                     newRow.insertCell(3).innerText = networkElement;
-                    newRow.insertCell(4).innerText = clli; // Agregar CLLI
+                    newRow.insertCell(4).innerText = clli; 
                     newRow.insertCell(5).innerText = clientesAfectados; 
                 }
 
@@ -288,10 +288,10 @@
 
         function clearInputFields() {
             document.getElementById('incidente').value = '';
-            document.getElementById('tipoCentral').value = '';
             document.getElementById('nombreCentral').value = '';
+            document.getElementById('tipoCentral').value = '';
             document.getElementById('networkElement').value = '';
-            document.getElementById('clli').value = ''; // Limpiar CLLI
+            document.getElementById('clli').value = ''; 
             document.getElementById('clientesAfectados').value = '';
         }
 
