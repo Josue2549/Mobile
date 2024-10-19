@@ -19,11 +19,11 @@
         th { background-color: #FF0000; color: white; }
         #details { margin-top: 20px; padding: 10px; border: 1px solid #ccc; border-radius: 8px; background-color: white; }
         .hidden { display: none; }
-        #resultsList { margin-top: 10px; }
         .result-item { cursor: pointer; padding: 5px; border: 1px solid #ccc; margin: 5px 0; background-color: white; border-radius: 5px; }
         .result-item:hover { background-color: #f0f0f0; }
         .highlight { color: red; }
         .footer { margin-top: 20px; text-align: center; color: white; font-size: 0.9rem; }
+        .selected { background-color: green; color: white; }
     </style>
 </head>
 <body>
@@ -82,7 +82,7 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.5/xlsx.full.min.js"></script>
     <script>
-        let globalData = [];
+        let globalData = JSON.parse(localStorage.getItem('data')) || [];
         let filteredData = [];
 
         function loadData() {
@@ -95,6 +95,7 @@
                 const workbook = XLSX.read(data, { type: 'array' });
                 const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
                 globalData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+                localStorage.setItem('data', JSON.stringify(globalData));
                 alert("Datos cargados correctamente.");
             };
 
@@ -111,17 +112,20 @@
             detailsContent.innerHTML = '';
 
             if (globalData.length > 0 && input) {
+                const searchTerms = input.split(' ').filter(term => term); // Separa las palabras
+
                 filteredData = globalData.filter(row => 
-                    (row[2] && row[2].toLowerCase().includes(input)) || 
-                    (row[7] && row[7].toLowerCase().includes(input)) ||
-                    (row[10] && row[10].toLowerCase().includes(input)) 
+                    searchTerms.every(term => 
+                        (row[2] && row[2].toLowerCase().includes(term)) || 
+                        (row[7] && row[7].toLowerCase().includes(term)) ||
+                        (row[10] && row[10].toLowerCase().includes(term))
+                    )
                 );
 
                 if (filteredData.length > 0) {
                     filteredData.forEach(row => {
                         const resultItem = document.createElement('div');
                         resultItem.className = 'result-item';
-
                         const highlightedRow = row.map((cell, index) => {
                             if ([2, 7, 10].includes(index)) {
                                 return `<span class="highlight">${cell}</span>`;
@@ -130,14 +134,26 @@
                         }).join(', ');
 
                         resultItem.innerHTML = highlightedRow;
-                        resultItem.onclick = () => showDetails(row);
+                        resultItem.onclick = () => {
+                            showDetails(row);
+                            clearSelectedResults(); // Limpiar selección previa
+                            resultItem.classList.add('selected'); // Agregar clase de selección
+                        };
                         resultsList.appendChild(resultItem);
                     });
                 } else {
-                    resultsList.innerHTML = `<strong>No se encontraron resultados.</strong>`;
+                    resultsList.innerHTML = '<strong>No se encontraron resultados.</strong>';
                 }
             } else {
-                resultsList.innerHTML = `<strong>Por favor ingrese un término de búsqueda.</strong>`;
+                resultsList.innerHTML = '<strong>Por favor ingrese un término de búsqueda.</strong>';
+            }
+        }
+
+        function clearSelectedResults() {
+            const resultsList = document.getElementById('resultsList');
+            const resultItems = resultsList.getElementsByClassName('result-item');
+            for (let i = 0; i < resultItems.length; i++) {
+                resultItems[i].classList.remove('selected'); // Eliminar clase de selección
             }
         }
 
@@ -152,9 +168,9 @@
             const clliInput = document.getElementById('clli');
 
             incidenteInput.value = ''; 
-            tipoCentralInput.value = row[8]; 
-            nombreCentralInput.value = row[2]; 
-            networkElementInput.value = row[7]; 
+            tipoCentralInput.value = row[8] || ''; 
+            nombreCentralInput.value = row[2] || ''; 
+            networkElementInput.value = row[7] || ''; 
             clliInput.value = row[10] || ''; 
             clientesAfectadosInput.value = row[13] || 0; 
 
@@ -218,6 +234,8 @@
                 if (existingRow) {
                     const currentAffected = parseInt(existingRow.cells[5].innerText) || 0;
                     existingRow.cells[5].innerText = currentAffected + clientesAfectados;
+                    clearSelectedRows(); // Limpiar selección anterior
+                    existingRow.classList.add('selected'); // Sombrear fila seleccionada
                 } else {
                     const newRow = tableBody.insertRow();
                     newRow.insertCell(0).innerText = incidente;
@@ -226,11 +244,24 @@
                     newRow.insertCell(3).innerText = networkElement;
                     newRow.insertCell(4).innerText = clli; 
                     newRow.insertCell(5).innerText = clientesAfectados; 
+
+                    // Agregar evento de clic para seleccionar la fila
+                    newRow.onclick = function() {
+                        clearSelectedRows(); // Limpiar selección anterior
+                        newRow.classList.add('selected'); // Sombrear fila seleccionada
+                    };
                 }
 
                 clearInputFields();
             } else {
                 alert("Por favor, complete todos los campos.");
+            }
+        }
+
+        function clearSelectedRows() {
+            const tableBody = document.getElementById('dataTable').getElementsByTagName('tbody')[0];
+            for (let i = 0; i < tableBody.rows.length; i++) {
+                tableBody.rows[i].classList.remove('selected'); // Eliminar la clase de selección
             }
         }
 
@@ -310,6 +341,11 @@
             document.execCommand('copy');
             alert("Tabla copiada al portapapeles.");
         }
+
+        // Cargar datos almacenados al inicio, sin agregar filas a la tabla
+        window.onload = function() {
+            globalData = JSON.parse(localStorage.getItem('data')) || [];
+        };
     </script>
 </body>
 </html>
